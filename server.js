@@ -10,6 +10,7 @@ const mysql = require('mysql2');
 const cors = require('cors');
 // Environment variable doc 
 const dotenv = require('dotenv'); 
+const db = require('./database');
 
 // 
 app.use(express.json());
@@ -18,10 +19,11 @@ dotenv.config();
 
 // connection to the database 
 const db = mysql.createConnection({
-    user: process.env.DB_USER,
+    user: process.env.DB_USERNAME,
     host: process.env.DB_HOST,
     password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME 
+    database: process.env.DB_NAME
+    
 });
 
 // Check if there is a connection 
