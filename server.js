@@ -1,100 +1,77 @@
 const express = require('express');
 const mysql = require('mysql2');
-const dotenv = require('dotenv'); 
-const db = require('./database');
+const dotenv = require('dotenv');
 
-dotenv.config(); 
+dotenv.config();
 
-// connection to the database 
+const app = express();
+const port = process.env.PORT || 3000;
+
 const db = mysql.createConnection({
+    host: process.env.DB_HOST,
     user: process.env.DB_USERNAME,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME
 });
 
 db.connect((err) => {
-    // If no connection 
-    if(err) return console.log("Error connecting to MYSQL");
+    if (err) {
+        console.error('Error connecting to db:', err.stack);
+        return;
+    }
+    console.log('Successfully connected to db');
 
-    //If connect works successfully
-    console.log("Connected to MYSQL as id: ", db.threadId); 
-}) 
+    // Retrieve all patients
+    app.get('/patients', (req, res) => {
+        db.query('SELECT patient_id, first_name, last_name, date_of_birth FROM patients', (err, results) => {
+            if (err) {
+                console.error('Error retrieving patients:', err);
+                res.status(500).send('Error retrieving patients');
+            } else {
+                res.json(results);
+            }
+        });
+    });
 
-app.set('view engine', 'ejs');
-app.set('views', __dirname + '/views');
+    // Retrieve all providers
+    app.get('/providers', (req, res) => {
+        db.query('SELECT first_name, last_name, provider_specialty FROM providers', (err, results) => {
+            if (err) {
+                console.error('Error retrieving providers:', err);
+                res.status(500).send('Error retrieving providers');
+            } else {
+                res.json(results);
+            }
+        });
+    });
 
+    // Retrieve patients by first name
+    app.get('/patients/:firstName', (req, res) => {
+        const firstName = req.params.firstName;
+        db.query('SELECT patient_id, first_name, last_name, date_of_birth FROM patients WHERE first_name = ?', [firstName], (err, results) => {
+            if (err) {
+                console.error('Error retrieving patients by first name:', err);
+                res.status(500).send('Error retrieving patients');
+            } else {
+                res.json(results);
+            }
+        });
+    });
 
+    // Retrieve providers by specialty
+    app.get('/providers/:specialty', (req, res) => {
+        const specialty = req.params.specialty;
+        db.query('SELECT first_name, last_name, provider_specialty FROM providers WHERE provider_specialty = ?', [specialty], (err, results) => {
+            if (err) {
+                console.error('Error retrieving providers by specialty:', err);
+                res.status(500).send('Error retrieving providers');
+            } else {
+                res.json(results);
+            }
+        });
+    });
 
-// Question 1 goes here(Retrieve all patients)
-
-app.get('/patients', (req,res) => {
-
-  // Retrieve data from database 
-  db.query('SELECT patient_id, first_name, last_name, date_of_birth FROM patients', (err, results) =>{
-      if (err){
-          console.error(err);
-          res.status(500).send('Error Retrieving data')
-      }else {
-          //Display the records to the browser 
-          res.render('data', {results: results});
-      }
-  });
-});
-// Question 2 goes here(Retrieve all providers)
-
-app.get('/providers', (req,res) => {
-
-  // Retrieve data from database 
-  db.query('SELECT first_name, last_name, provider_specialty FROM providers', (err, results) =>{
-      if (err){
-          console.error(err);
-          res.status(500).send('Error Retrieving data')
-      }else {
-          //Display the records to the browser 
-          res.render('data', {results: results});
-      }
-  });
-});
-// Question 3 goes here(Filter by patients first name)
-
-app.get('/patients/:firstName', (req,res) => {
-
-  // Retrieve data from database 
-  db.query('SELECT patient_id, first_name, last_name, date_of_birth FROM patients WHERE first_name = ?', (err, results) =>{
-      if (err){
-          console.error(err);
-          res.status(500).send('Error Retrieving data')
-      }else {
-          //Display the records to the browser 
-          res.render('data', {results: results});
-      }
-  });
-});
-
-// Question 4 goes here(Retrieve all providers by their speciality)
-
-app.get('/providers/:specialty', (req,res) => {
-
-  // Retrieve data from database 
-  db.query('SELECT first_name, last_name, provider_specialty FROM providers WHERE provider_specialty = ?', (err, results) =>{
-      if (err){
-          console.error(err);
-          res.status(500).send('Error Retrieving data')
-      }else {
-          //Display the records to the browser 
-          res.render('data', {results: results});
-      }
-  });
-});
-
-// Start the server 
-app.listen(process.env.PORT, () => {
-  console.log(`Server listening on port ${process.env.PORT}`);
-
-  // Sending a message to the browser 
-  console.log('Sending message to browser...');
-  app.get('/', (req,res) => {
-      res.send('Server Started Successfully!');
-  });
-
+    app.listen(port, () => {
+        console.log(`Server listening on port ${port}`);
+    });
 });
